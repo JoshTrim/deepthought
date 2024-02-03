@@ -8,13 +8,15 @@ from tqdm import tqdm
 
 from capture import record_mic
 
+from langchain_community.llms import Ollama
+
 class Assistant:
 
     def __init__(
             self,
             whisper_model:str,
             ollama_model:str,
-            record_duration:int = 5,
+            record_duration:int = 10,
             ):
 
         self.whisper_model = whisper.load_model(whisper_model)
@@ -29,6 +31,7 @@ class Assistant:
 
         self.tts_model = TTS("tts_models/en/jenny/jenny").to(device)
         self.ollama_model = ollama_model
+        self.llm = Ollama(model=ollama_model)
 
     def record(self):
 
@@ -89,11 +92,16 @@ class Assistant:
         return [query]
 
     def query(self):
-        response = ollama.chat(model=self.ollama_model, messages=self.convert_to_query(self.transcription))
-        self.response = response['message']['content']
+        response = []
+        for chunks in self.llm.stream(self.transcription):
+            response.append(chunks)
+            print(chunks, sep='', end='')
+        self.response = ''.join(response)
+        # response = ollama.chat(model=self.ollama_model, messages=self.convert_to_query(self.transcription))
+        # self.response = response['message']['content']
 
     def render_response(self):
-        self.tts_model.tts_to_file(text=self.response, file_path=self.tts_output)
+        self.tts_model.tts_to_file(text=self.response, file_path=self.tts_output, preset="ultra_fast")
 
     def play_audio_file(self):
 
