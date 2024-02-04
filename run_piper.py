@@ -1,78 +1,51 @@
-from piper.voice import PiperVoice as piper #Backbone of text to speech
-import wave #Writing text to speech to wave files
-from sys import platform
-from os import remove
-from os import environ
+import os
+import wave
+from piper.voice import PiperVoice
+from tqdm import tqdm
 
-environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide" #Stop pygame from saying hello in the console
+voices = {
+        'british' : {
+            'alan' : 'en_GB-alan-medium.onnx',
+            'alba' : 'en_GB-alba-medium.onnx',
+            'aru' : 'en_GB-aru-medium.onnx',
+            'jenny_dioco' : 'en_GB-jenny_dioco-medium.onnx',
+            'northern_english_male' : 'en_GB-northern_english_male-medium.onnx',
+            'semaine' : 'en_GB-semaine-medium.onnx',
+            'southern_english_female' : 'en_GB-semaine-medium.onnx',
+            'vctk' : 'en_GB-vctk-medium.onnx',
+        },
+        'american' : {
+            'amy' : 'en_US-amy-medium.onnx',
+            'arctic' : 'en_US-arctic-medium.onnx',
+            'danny' : 'en_US-danny-low.onnx',
+            # 'hfc_male' : 'en_US-hfc-male-medium.onnx',
+            'joe' : 'en_US-joe-medium.onnx',
+            'kathleen' : 'en_US-kathleen-low.onnx',
+            'kusal' : 'en_US-kusal-medium.onnx',
+            'l2arctic' : 'en_US-l2arctic-medium.onnx',
+            # do later
+            #'lessac' : 'en_US-lessac-medium',
+            #'libritts' : 'en_US-libritts-medium',
+            #'libritts_r' : 'en_US-librittes_r-medium',
+            #'ryan' : 'en_US-ryan-medium',
+            },
+    }
 
-from pygame import mixer
 
-mixer.init()
+voicedir = os.path.expanduser('/Users/joshtrim/Development/Python/deepthought/voices/') #Where onnx model files are stored on my machine
 
-#Check if the operating system is MacOS
-if platform == 'darwin':
-    print('This library cannot be used on MacOS yet, due to piper not being supported there.')
-    exit() #Piper isn't available on MacOS yet
+def introduce_yourselves():
+    for nationality, value in tqdm(voices.items()):
+        for name, voice in tqdm(value.items()):
+            model = voicedir+voice
+            voice = PiperVoice.load(model)
+            wav_file = wave.open(f'{name}_output.wav', 'w')
+            text = f"Hello, my name is {name}. This is an example of how I sound."
+            audio = voice.synthesize(text,wav_file)
+            
 
-model = None #Set the model to none at the start
-voice = None #Set the voice to none at the start
 
-#Function to load and set the voice model to be used
-def load(model_set):
-    global model
-    global voice
-    
-    if '.onnx' in model_set: #Is the extension .onnx in the filename, if not add it below.
-        model = model_set #Set model variable as is.
-    else:
-        model = model_set + '.onnx' #Set model variable and append .onnx.
-    
-    #Try to load the model
-    try:
-        voice = piper.load(model) #Load the model
-    except:
-        print("Something went wrong, did you type the correct name for the model?")
-        exit()
+introduce_yourselves()
 
-#Function to save a text to speech file to disk
-def save(text, file_name, model_set=model):
-    global model
-    global voice
-    
-    if model_set == None and model == None: #Check if a model has been set, if not then exit.
-        print("No model was set! Please set a model using the load function: load(\"your_model_here\")")
-        exit()
-    elif model_set != None: #Is there a voice that should be used only once?
-        temp_voice = piper.load(model_set)
-        with wave.open(file_name, "wb") as wav_file:
-            temp_voice.synthesize(text, wav_file)
-    else: #If not, use the voice that was set eariler.
-        with wave.open(file_name, "wb") as wav_file:
-            voice.synthesize(text, wav_file)
 
-#Function to save the file to disk, play it on the speakers, then delete the file.
-def say(text, model_set=model):
-    global model
-    global voice
-    
-    if model_set == None and model == None: #Check if a model has been set, if not then exit.
-        print("No model was set! Please set a model using the load function:  load(\"your_model_here\")")
-        exit()
-    elif model_set != None: #Is there a voice that should only be used once?
-        temp_voice = piper.load(model_set)
-        with wave.open('tmp_text_2_speech.wav', "wb") as wav_file:
-            temp_voice.synthesize(text, wav_file)
-    else: #If not, use the voice that was set earlier.
-        with wave.open('tmp_text_2_speech.wav', "wb") as wav_file:
-            voice.synthesize(text, wav_file)
-    
-    #Play the file
-    mixer.music.load('tmp_text_2_speech.wav')
-    mixer.music.set_volume(1)
-    mixer.music.play()
 
-    while mixer.music.get_busy():
-        pass
-    
-    remove("tmp_text_2_speech.wav") #Remove the temporary file
