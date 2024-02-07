@@ -5,6 +5,8 @@ from TTS.api import TTS
 import pyaudio
 import wave
 from tqdm import tqdm
+from pathlib import Path
+import time
 
 from capture import record_mic
 
@@ -18,6 +20,9 @@ class Assistant:
             ollama_model:str,
             record_duration:int = 10,
             ):
+        
+        self.voice_demos_file_path = './voices/wav/'
+        self.voice_demos = [Path(voice) for voice in Path(self.voice_demos_file_path).glob('*.wav')]
 
         self.whisper_model = whisper.load_model(whisper_model)
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -103,34 +108,60 @@ class Assistant:
     def render_response(self):
         self.tts_model.tts_to_file(text=self.response, file_path=self.tts_output, preset="ultra_fast")
 
-    def play_audio_file(self):
+    def play_audio_file(self, file=None):
+        CHUNK = 1024
+        if file == None: file = self.tts_output
 
-        # Set chunk size of 1024 samples per data frame
-        chunk = 1024  
+        with wave.open(file, 'rb') as wf:
+            # Instantiate PyAudio and initialize PortAudio system resources (1)
+            p = pyaudio.PyAudio()
 
-        # Open the sound file 
-        wf = wave.open(self.tts_output, 'rb')
+            # Open stream (2)
+            stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
+                            channels=wf.getnchannels(),
+                            rate=wf.getframerate(),
+                            output=True)
 
-        # Create an interface to PortAudio
-        p = pyaudio.PyAudio()
+            # Play samples from the wave file (3)
+            while len(data := wf.readframes(CHUNK)):  # Requires Python 3.8+ for :=
+                stream.write(data)
 
-        # Open a .Stream object to write the WAV file to. 'output = True' indicates that the sound will be played rather than recorded
-        stream = p.open(format = p.get_format_from_width(wf.getsampwidth()),
-                        channels = wf.getnchannels(),
-                        rate = wf.getframerate(),
-                        output = True)
+            # Close stream (4)
+            stream.close()
 
-        # Read data in chunks
-        data = wf.readframes(chunk)
+            # Release PortAudio system resources (5)
+            p.terminate()
 
-        # Play the sound by writing the audio data to the stream
-        while data != '':
-            stream.write(data)
-            data = wf.readframes(chunk)
 
-        # Close and terminate the stream
-        stream.close()
-        p.terminate()
+        # if file == None: file = self.tts_output
+        #
+        # # Set chunk size of 1024 samples per data frame
+        # chunk = 1024  
+        #
+        # # Open the sound file 
+        # wf = wave.open(file, 'rb')
+        #
+        # # Create an interface to PortAudio
+        # p = pyaudio.PyAudio()
+        #
+        # # Open a .Stream object to write the WAV file to. 'output = True' indicates that the sound will be played rather than recorded
+        # stream = p.open(format = p.get_format_from_width(wf.getsampwidth()),
+        #                 channels = wf.getnchannels(),
+        #                 rate = wf.getframerate(),
+        #                 output = True)
+        #
+        # # Read data in chunks
+        # data = wf.readframes(chunk)
+        #
+        # # Play the sound by writing the audio data to the stream
+        # while data != '':
+        #     stream.write(data)
+        #     data = wf.readframes(chunk)
+        #
+        # # Close and terminate the stream
+        # stream.close()
+        # p.terminate()
+        #
 
     def speak(self):
         self.play_audio_file()
@@ -149,6 +180,12 @@ class Assistant:
         # play audio file
         deepthought.speak()
 
+    def demo_voices(self):
+        print(self.voice_demos)
+        for voice in self.voice_demos:
+           self.play_audio_file(file=str(voice.resolve()))
+           time.sleep(1)
+
 
 
 deepthought = Assistant(
@@ -156,4 +193,5 @@ deepthought = Assistant(
         ollama_model="llama2-uncensored"
         )
 
-deepthought.talk()
+# deepthought.talk()
+deepthought.demo_voices()

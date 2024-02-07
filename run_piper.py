@@ -18,16 +18,12 @@ voices = {
             'amy' : 'en_US-amy-medium.onnx',
             'arctic' : 'en_US-arctic-medium.onnx',
             'danny' : 'en_US-danny-low.onnx',
-            # 'hfc_male' : 'en_US-hfc-male-medium.onnx',
             'joe' : 'en_US-joe-medium.onnx',
             'kathleen' : 'en_US-kathleen-low.onnx',
             'kusal' : 'en_US-kusal-medium.onnx',
             'l2arctic' : 'en_US-l2arctic-medium.onnx',
-            # do later
-            #'lessac' : 'en_US-lessac-medium',
-            #'libritts' : 'en_US-libritts-medium',
-            #'libritts_r' : 'en_US-librittes_r-medium',
-            #'ryan' : 'en_US-ryan-medium',
+            'lessac' : 'en_US-lessac-medium.onnx',
+            'libritts' : 'en_US-libritts-high.onnx',
             },
     }
 
@@ -39,7 +35,7 @@ def introduce_yourselves():
         for name, voice in tqdm(value.items()):
             model = voicedir+voice
             voice = PiperVoice.load(model)
-            wav_file = wave.open(f'{name}_output.wav', 'w')
+            wav_file = wave.open(f'./voices/wav/{name}_output.wav', 'w')
             text = f"Hello, my name is {name}. This is an example of how I sound."
             audio = voice.synthesize(text,wav_file)
             
