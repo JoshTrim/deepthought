@@ -7,6 +7,8 @@ import wave
 from tqdm import tqdm
 from pathlib import Path
 import time
+from piper.voice import PiperVoice
+from random import randrange
 
 from capture import record_mic
 
@@ -18,12 +20,11 @@ class Assistant:
             self,
             whisper_model:str,
             ollama_model:str,
-            record_duration:int = 10,
+            record_duration:int = 5,
             ):
-        
-        self.voice_demos_file_path = './voices/wav/'
-        self.voice_demos = [Path(voice) for voice in Path(self.voice_demos_file_path).glob('*.wav')]
 
+        self.RUNNING = True
+        
         self.whisper_model = whisper.load_model(whisper_model)
         device = "cuda" if torch.cuda.is_available() else "cpu"
         self.tts_output = "tts_output.wav"
@@ -37,6 +38,22 @@ class Assistant:
         self.tts_model = TTS("tts_models/en/jenny/jenny").to(device)
         self.ollama_model = ollama_model
         self.llm = Ollama(model=ollama_model)
+
+        
+
+        self.voices_file_path = "./voices/"
+
+        self.voice_demos = []
+        self.voice_models = []
+
+        for nationality in self.voices.values():
+            for name, model in nationality.items():
+                self.voice_demos.append(Path(self.voices_file_path + "wav/" + name + "_output.wav"))
+                self.voice_models.append(Path(self.voices_file_path + model))
+
+        self.voice_model = str(self.voice_models[randrange(len(self.voice_models))].resolve())
+        self.voice = PiperVoice.load(self.voice_model)
+
 
     def record(self):
 
@@ -86,6 +103,11 @@ class Assistant:
 
     def stt(self):
         self.transcription = self.whisper_model.transcribe(self.recording)['text']
+        
+        # Detect stop word
+        if "quit" in self.transcription:
+            self.RUNNING = False
+
         print(f"\nTranscription: \n{self.transcription}")
 
     def capture(self):
@@ -105,8 +127,13 @@ class Assistant:
         # response = ollama.chat(model=self.ollama_model, messages=self.convert_to_query(self.transcription))
         # self.response = response['message']['content']
 
-    def render_response(self):
-        self.tts_model.tts_to_file(text=self.response, file_path=self.tts_output, preset="ultra_fast")
+    def tts(self):
+        if not self.response:
+            return "Error, no transcription available."
+        else:
+            wav_file = wave.open(self.tts_output, 'w')
+            audio = self.voice.synthesize(self.response, wav_file)
+        # self.tts_model.tts_to_file(text=self.response, file_path=self.tts_output, preset="ultra_fast")
 
     def play_audio_file(self, file=None):
         CHUNK = 1024
@@ -132,66 +159,42 @@ class Assistant:
             # Release PortAudio system resources (5)
             p.terminate()
 
-
-        # if file == None: file = self.tts_output
-        #
-        # # Set chunk size of 1024 samples per data frame
-        # chunk = 1024  
-        #
-        # # Open the sound file 
-        # wf = wave.open(file, 'rb')
-        #
-        # # Create an interface to PortAudio
-        # p = pyaudio.PyAudio()
-        #
-        # # Open a .Stream object to write the WAV file to. 'output = True' indicates that the sound will be played rather than recorded
-        # stream = p.open(format = p.get_format_from_width(wf.getsampwidth()),
-        #                 channels = wf.getnchannels(),
-        #                 rate = wf.getframerate(),
-        #                 output = True)
-        #
-        # # Read data in chunks
-        # data = wf.readframes(chunk)
-        #
-        # # Play the sound by writing the audio data to the stream
-        # while data != '':
-        #     stream.write(data)
-        #     data = wf.readframes(chunk)
-        #
-        # # Close and terminate the stream
-        # stream.close()
-        # p.terminate()
-        #
-
     def speak(self):
         self.play_audio_file()
 
     def talk(self):
 
-        # record mic for 5 secs, convert to transcription
-        deepthought.capture()
-        
-        # send transcript to ollama
-        deepthought.query()
+        while self.RUNNING:
 
-        # render ollama response to audio file
-        deepthought.render_response()
+            # record mic for 5 secs, convert to transcription
+            self.capture()
+            
+            # send transcript to ollama
+            self.query()
 
-        # play audio file
-        deepthought.speak()
+            # render ollama response to audio file
+            self.tts()
+
+            # play audio file
+            self.speak()
 
     def demo_voices(self):
-        print(self.voice_demos)
         for voice in self.voice_demos:
            self.play_audio_file(file=str(voice.resolve()))
            time.sleep(1)
 
+    def select_voice(self):
+        self.demo_voices()
 
 
+        
+
+
+# Initialise assistant
 deepthought = Assistant(
         whisper_model="base",
         ollama_model="llama2-uncensored"
         )
 
-# deepthought.talk()
-deepthought.demo_voices()
+deepthought.talk()
+# deepthought.demo_voices()

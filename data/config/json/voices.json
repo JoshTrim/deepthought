@@ -1,0 +1,23 @@
+{
+    "British" : {
+        "Alan" : "en_GB-alan-medium.onnx",
+        "Alba" : "en_GB-alba-medium.onnx",
+        "Aru" : "en_GB-aru-medium.onnx",
+        "Jenny" : "en_GB-jenny_dioco-medium.onnx",
+        "Northern_english_male" : "en_GB-northern_english_male-medium.onnx",
+        "Semaine" : "en_GB-semaine-medium.onnx",
+        "Southern_english_female" : "en_GB-semaine-medium.onnx",
+        "Vctk" : "en_GB-vctk-medium.onnx"
+    },
+    "American" : {
+        "Amy" : "en_US-amy-medium.onnx",
+        "Arctic" : "en_US-arctic-medium.onnx",
+        "Danny" : "en_US-danny-low.onnx",
+        "Joe" : "en_US-joe-medium.onnx",
+        "Kathleen" : "en_US-kathleen-low.onnx",
+        "Kusal" : "en_US-kusal-medium.onnx",
+        "L2arctic" : "en_US-l2arctic-medium.onnx",
+        "Lessac" : "en_US-lessac-medium.onnx",
+        "Libritts" : "en_US-libritts-high.onnx"
+    }
+}
