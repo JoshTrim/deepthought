@@ -2,14 +2,25 @@
 from pathlib import Path
 from pprint import pprint
 import json
+from typing import Optional
+import time
 
 # third party
-from pydantic import BaseModel
+from pydantic import BaseModel as PydanticBaseModel
 from pydantic_core.core_schema import JsonSchema
+
+from piper.voice import PiperVoice
+import wave
+
+from random import randrange
+
+class BaseModel(PydanticBaseModel):
+    class Config:
+        arbitrary_types_allowed = True # needed because of time.time error
 
 class VoiceChoices(BaseModel):
     voices: list = []
-    data_file_path: Path
+    data_file_path: Path = Path("./data/")
     json_data: JsonSchema = None
 
     def load_config(self):
@@ -24,6 +35,7 @@ class VoiceChoices(BaseModel):
         for nationality, models in self.json_data.items():
             for name, onnx_file in models.items():
                 demo_wav = Path(self.data_file_path) / "wav/" / name / "_output.wav"
+                onnx_file = Path(self.data_file_path) / "config/onnx/" / onnx_file
                 voice_model = Voice(name=name, nationality=nationality, onnx_file=onnx_file, demo_wav=demo_wav)
                 self.voices.append(voice_model)
 
@@ -33,10 +45,21 @@ class Voice(BaseModel):
     onnx_file: Path
     demo_wav: Path
 
+class VoiceEngine(BaseModel):
+    active_voice: Optional[Voice] = None 
+    voice_choices: VoiceChoices = VoiceChoices()
+    voice_choices.load_voice_choices()
 
-voice_choices = VoiceChoices(data_file_path=Path("./data/"))
-voice_choices.load_voice_choices()
-pprint(voice_choices)
+    def model_post_init(self, *args, **kwargs):
+        self.active_voice = self.voice_choices.voices[randrange(0, len(self.voice_choices.voices))]
+        print(f"Selected {self.active_voice}")
+
+    def tts(self, script):
+        voice = PiperVoice.load(str(self.active_voice.onnx_file.resolve()))
+        file_name = f'./output/{self.active_voice.name}_output.wav'
+        wav_file = wave.open(file_name, 'w')
+        audio = voice.synthesize(script, wav_file)
+
 
 
 # for nationality, models in voice_choices.items():

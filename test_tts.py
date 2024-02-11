@@ -1,4 +1,7 @@
-import run_piper as engine
+from models import VoiceEngine
+from utils import Timer
 
-engine.load("en_GB-alan-medium.onnx")
-engine.say("This is an example of text-to-speech using Piper TTS.")
+t = Timer()
+engine = VoiceEngine()
+engine.tts("Here is some text, please synthesize it")
+t.stop()
