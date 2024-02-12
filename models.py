@@ -51,13 +51,13 @@ class VoiceEngine(BaseModel):
     voice_choices.load_voice_choices()
 
     def model_post_init(self, *args, **kwargs):
-        self.active_voice = self.voice_choices.voices[randrange(0, len(self.voice_choices.voices))]
+        self.active_voice = self.voice_choices.voices[0]
         print(f"Selected {self.active_voice}")
 
     def tts(self, script):
         voice = PiperVoice.load(str(self.active_voice.onnx_file.resolve()))
         file_name = f'./output/{self.active_voice.name}_output.wav'
-        wav_file = wave.open(file_name, 'w')
+        wav_file = wave.open(file_name, 'wb')
         audio = voice.synthesize(script, wav_file)
 
 
