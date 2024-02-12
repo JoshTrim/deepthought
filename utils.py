@@ -10,4 +10,5 @@ class Timer(BaseModel):
 
     def stop(self):
         self.duration = time.time() - self.start_time
-        print(f"--- {self.duration} seconds ---")
+        return self.duration
+        # print(f"--- {self.duration} seconds ---")
