@@ -1,0 +1,10 @@
+requests
+PyAudio
+pyttsx3
+stream2sentence==0.2.2
+azure-cognitiveservices-speech
+elevenlabs
+TTS==0.22.0
+tqdm
+pydub
+openai
