@@ -6,7 +6,7 @@ import shutil
 import ffmpeg
 import subprocess
 
-from v5.utils.utils import run_command
+from deepthought.utils import run_command
 
 from pathlib import Path
 
